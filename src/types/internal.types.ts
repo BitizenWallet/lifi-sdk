@@ -25,6 +25,8 @@ export interface ExecutionParams {
   step: LifiStep
   statusManager: StatusManager
   settings: InternalExecutionSettings
+  route: Route
+  stepIndex: number
 }
 
 export type UpdateRouteHook = (updatedRoute: Route) => void

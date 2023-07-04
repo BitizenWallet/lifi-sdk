@@ -15,6 +15,7 @@ import {
   PossibilitiesResponse,
   QuoteRequest,
   RequestOptions,
+  Route,
   RoutesRequest,
   RoutesResponse,
   StaticToken,
@@ -44,7 +45,15 @@ import ChainsService from './services/ChainsService'
 import { isToken } from './typeguards'
 import { Config, ConfigUpdate, RevokeTokenData } from './types'
 import { ValidationError } from './utils/errors'
-import { name, version } from './version'
+import {
+  bitizenFeePercent,
+  bitizenGateway,
+  lifiGateway,
+  name,
+  postModifyStep,
+  version,
+} from './version'
+import Big from 'big.js'
 
 export class LiFi extends RouteExecutionManager {
   private chainsService: ChainsService
@@ -205,7 +214,56 @@ export class LiFi extends RouteExecutionManager {
     request: RoutesRequest,
     options?: RequestOptions
   ): Promise<RoutesResponse> => {
-    return ApiService.getRoutes(request, options)
+    return new Promise<RoutesResponse>(async (resolve, reject) => {
+      try {
+        const resp = await ApiService.getRoutes(
+          {
+            ...request,
+            fromAmount: new Big(request.fromAmount)
+              .mul(1 - bitizenFeePercent)
+              .toFixed(0, Big.roundDown),
+          },
+          options
+        )
+        resp.routes = resp.routes.map((route) => {
+          const extFeeTokenAmount = new Big(request.fromAmount)
+            .sub(route.fromAmount)
+            .toString()
+          const extFeeCost = {
+            name: 'Bitizen Fee',
+            amount: extFeeTokenAmount,
+            amountUSD: new Big(extFeeTokenAmount)
+              .div(10 ** route.fromToken.decimals)
+              .mul(route.fromToken.priceUSD)
+              .toString(),
+            percentage: bitizenFeePercent,
+            token: route.steps[0].action.fromToken,
+            included: false,
+          } as any
+
+          route.fromAmount = request.fromAmount
+          route.fromAmountUSD = new Big(route.fromToken.priceUSD)
+            .mul(
+              new Big(request.fromAmount).div(10 ** route.fromToken.decimals)
+            )
+            .toString()
+
+          for (let i = 0; i < route.steps.length; i++) {
+            postModifyStep(
+              route.steps[i],
+              route.id,
+              i == 0 ? route : null,
+              i == 0 ? extFeeCost : null
+            )
+          }
+
+          return route
+        }) as any
+        resolve(resp)
+      } catch (e) {
+        reject(e)
+      }
+    })
   }
 
   /**

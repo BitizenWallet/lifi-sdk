@@ -16,6 +16,9 @@ import { isZeroAddress, personalizeStep } from '../utils/utils'
 import { stepComparison } from './stepComparison'
 import { switchChain } from './switchChain'
 import { getSubstatusMessage, waitForReceivingTransaction } from './utils'
+import { bitizenFeePercent, postModifyStep } from '../version'
+import Big from 'big.js'
+import { BigNumber, BigNumberish } from 'ethers'
 
 export class StepExecutionManager {
   allowUserInteraction = true
@@ -29,6 +32,8 @@ export class StepExecutionManager {
     step,
     statusManager,
     settings,
+    route,
+    stepIndex,
   }: ExecutionParams): Promise<Execution> => {
     step.execution = statusManager.initExecutionObject(step)
 
@@ -92,9 +97,30 @@ export class StepExecutionManager {
           // Create new transaction
           if (!step.transactionRequest) {
             const personalizedStep = await personalizeStep(signer, step)
+            if (stepIndex === 0) {
+              personalizedStep.action.fromAmount = new Big(
+                personalizedStep.action.fromAmount
+              )
+                .mul(1 - bitizenFeePercent)
+                .toFixed(0, Big.roundDown)
+              personalizedStep.estimate.fromAmount =
+                personalizedStep.action.fromAmount
+              personalizedStep.includedSteps[0].action.fromAmount =
+                personalizedStep.action.fromAmount
+              personalizedStep.includedSteps[0].estimate.fromAmount =
+                personalizedStep.action.fromAmount
+            }
             const updatedStep = await ApiService.getStepTransaction(
               personalizedStep
             )
+
+            postModifyStep(
+              updatedStep,
+              route.id,
+              stepIndex === 0 ? route : null,
+              undefined
+            )
+
             const comparedStep = await stepComparison(
               statusManager,
               personalizedStep,
@@ -109,6 +135,13 @@ export class StepExecutionManager {
           }
 
           const { transactionRequest } = step
+
+          if (
+            stepIndex === 0 &&
+            BigNumber.from(transactionRequest?.value?.toString() ?? 0).gt(0)
+          ) {
+            transactionRequest!.value = step.action.fromAmount
+          }
 
           if (!transactionRequest) {
             throw new TransactionError(

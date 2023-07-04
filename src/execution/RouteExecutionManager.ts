@@ -145,7 +145,12 @@ export class RouteExecutionManager {
       }
 
       try {
-        const stepExecutor = new StepExecutor(statusManager, execution.settings)
+        const stepExecutor = new StepExecutor(
+          index,
+          route,
+          statusManager,
+          execution.settings
+        )
         execution.executors.push(stepExecutor)
 
         // Check if we want to execute this step in the background

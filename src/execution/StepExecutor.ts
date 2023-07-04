@@ -3,6 +3,7 @@ import {
   InteractionSettings,
   InternalExecutionSettings,
   LifiStep,
+  Route,
 } from '../types'
 import { StatusManager } from './StatusManager'
 import { StepExecutionManager } from './StepExecutionManager'
@@ -16,6 +17,8 @@ const defaultInteractionSettings = {
 }
 
 export class StepExecutor {
+  stepIndex: number
+  route: Route
   stepExecutionManager: StepExecutionManager
   statusManager: StatusManager
   settings: InternalExecutionSettings
@@ -24,9 +27,13 @@ export class StepExecutor {
   executionStopped = false
 
   constructor(
+    stepIndex: number,
+    route: Route,
     statusManager: StatusManager,
     settings: InternalExecutionSettings
   ) {
+    this.stepIndex = stepIndex
+    this.route = route
     this.stepExecutionManager = new StepExecutionManager()
     this.statusManager = statusManager
     this.settings = settings
@@ -88,6 +95,8 @@ export class StepExecutor {
       step,
       settings: this.settings,
       statusManager: this.statusManager,
+      route: this.route,
+      stepIndex: this.stepIndex,
     }
 
     await this.stepExecutionManager.execute(parameters)

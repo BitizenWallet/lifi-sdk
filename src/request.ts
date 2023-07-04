@@ -52,6 +52,11 @@ export const request = async <T = Response>(
       }
     }
 
+    options.headers = {
+      ...options?.headers,
+      'Cache-Control': 'no-cache',
+    }
+
     const response: Response = await fetch(url, options)
     if (!response.ok) {
       throw new HTTPError(response)

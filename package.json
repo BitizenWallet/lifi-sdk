@@ -7,16 +7,16 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "watch": "tsc -w -p ./tsconfig.json",
-    "build": "yarn clean && tsc --project ./tsconfig.json && tsc --project ./tsconfig.cjs.json",
+    "build": "npm run clean && tsc --project ./tsconfig.json && tsc --project ./tsconfig.cjs.json",
     "clean": "node tools/cleanup",
     "package": "npm run build && npm pack",
     "test": "vitest --run --dangerouslyIgnoreUnhandledErrors",
-    "test:unit": "yarn test .unit.spec.ts",
-    "test:cov": "yarn test --coverage",
-    "test:e2e": "yarn test -c vitest.e2e.config.ts",
+    "test:unit": "npm run test .unit.spec.ts",
+    "test:cov": "npm run test --coverage",
+    "test:e2e": "npm run test -c vitest.e2e.config.ts",
     "addscope": "node tools/packagejson name @lifi/sdk",
     "pre-commit": "lint-staged",
-    "pre-push": "yarn types:check && yarn build && yarn test:unit",
+    "pre-push": "npm run types:check && npm run build && npm run test:unit",
     "lint": "eslint --ext .tsx --ext .ts ./src",
     "lint:fix": "eslint --ext .tsx --ext .ts ./src --fix",
     "types:check": "tsc --noEmit",
@@ -35,8 +35,8 @@
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
-      "yarn run lint:fix",
-      "yarn run prettier:fix"
+      "npm run lint:fix",
+      "npm run prettier:fix"
     ]
   },
   "files": [
@@ -77,6 +77,8 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/contracts": "^5.7.0",
     "@lifi/types": "^6.0.0",
+    "@types/big.js": "^6.1.6",
+    "big.js": "^6.2.1",
     "bignumber.js": "^9.1.1",
     "eth-rpc-errors": "^4.0.3",
     "ethers": "^5.7.2"
@@ -105,5 +107,5 @@
   "directories": {
     "test": "test"
   },
-  "packageManager": "yarn@3.5.1"
+  "packageManager": "npm run@3.5.1"
 }
