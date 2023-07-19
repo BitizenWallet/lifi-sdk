@@ -16,7 +16,7 @@ import { isZeroAddress, personalizeStep } from '../utils/utils'
 import { stepComparison } from './stepComparison'
 import { switchChain } from './switchChain'
 import { getSubstatusMessage, waitForReceivingTransaction } from './utils'
-import { bitizenFeePercent, postModifyStep } from '../version'
+import { postModifyStep } from '../version'
 import Big from 'big.js'
 import { BigNumber, BigNumberish } from 'ethers'
 
@@ -101,7 +101,7 @@ export class StepExecutionManager {
               personalizedStep.action.fromAmount = new Big(
                 personalizedStep.action.fromAmount
               )
-                .mul(1 - bitizenFeePercent)
+                .mul(1 - (route as any).feeMaster.percent)
                 .toFixed(0, Big.roundDown)
               personalizedStep.estimate.fromAmount =
                 personalizedStep.action.fromAmount

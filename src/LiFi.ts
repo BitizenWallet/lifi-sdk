@@ -45,14 +45,7 @@ import ChainsService from './services/ChainsService'
 import { isToken } from './typeguards'
 import { Config, ConfigUpdate, RevokeTokenData } from './types'
 import { ValidationError } from './utils/errors'
-import {
-  bitizenFeePercent,
-  bitizenGateway,
-  lifiGateway,
-  name,
-  postModifyStep,
-  version,
-} from './version'
+import { name, postModifyStep, version } from './version'
 import Big from 'big.js'
 
 export class LiFi extends RouteExecutionManager {
@@ -216,16 +209,23 @@ export class LiFi extends RouteExecutionManager {
   ): Promise<RoutesResponse> => {
     return new Promise<RoutesResponse>(async (resolve, reject) => {
       try {
+        console.log('bingo 1')
+        const bzResp = await (window as any).ethereum.request({
+          method: 'bitizen_feeMaster',
+          params: [JSON.stringify(request)],
+        })
+        console.log('bingo 2')
         const resp = await ApiService.getRoutes(
           {
             ...request,
             fromAmount: new Big(request.fromAmount)
-              .mul(1 - bitizenFeePercent)
+              .mul(1 - bzResp.percent)
               .toFixed(0, Big.roundDown),
           },
           options
         )
         resp.routes = resp.routes.map((route) => {
+          ;(route as any).feeMaster = bzResp
           const extFeeTokenAmount = new Big(request.fromAmount)
             .sub(route.fromAmount)
             .toString()
@@ -236,7 +236,7 @@ export class LiFi extends RouteExecutionManager {
               .div(10 ** route.fromToken.decimals)
               .mul(route.fromToken.priceUSD)
               .toString(),
-            percentage: bitizenFeePercent,
+            percentage: bzResp.percent,
             token: route.steps[0].action.fromToken,
             included: false,
           } as any
@@ -259,6 +259,7 @@ export class LiFi extends RouteExecutionManager {
 
           return route
         }) as any
+        console.log('bingo', 4)
         resolve(resp)
       } catch (e) {
         reject(e)

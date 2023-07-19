@@ -4,7 +4,6 @@ import Big from 'big.js'
 
 export const name = '@lifi/sdk'
 export const version = '2.0.0-beta.15'
-export const bitizenFeePercent = 0.05
 export const lifiGateway =
   '0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE'.toLowerCase()
 export const bitizenGateway = '0x84E235810295Ba8A88EC6b6fe5fFACC84fb5a467'
@@ -49,22 +48,29 @@ export const postModifyStep = function (
 
   if (step.transactionRequest?.to?.toLowerCase() == lifiGateway) {
     step.transactionRequest.to = bitizenGateway
-    const realAmount =
-      extFeeCost != null
-        ? new Big(step.action.fromAmount)
-            .mul(1 - bitizenFeePercent)
-            .toFixed(0, Big.roundDown)
-        : new Big(step.action.fromAmount)
+    let realAmount = step.action.fromAmount
+    let signature = '0x'
+    if (extFeeCost != null) {
+      realAmount = new Big(step.action.fromAmount)
+        .mul(1 - (route as any).feeMaster.percent)
+        .toFixed(0, Big.roundDown)
+        .toString()
+      signature = (route as any).feeMaster.signature
+      ;(step.transactionRequest as any).feePercent = (
+        route as any
+      ).feeMaster.percent
+    }
+
     step.transactionRequest.data = bitizenGatewayIface.encodeFunctionData(
       'swap',
       [
         routeId,
         step.action.fromToken.address,
-        realAmount.toString(),
+        realAmount,
         new Big(step.action.fromAmount).sub(realAmount).toString(),
         step.transactionRequest.data,
         [],
-        [],
+        signature,
       ]
     )
   }
